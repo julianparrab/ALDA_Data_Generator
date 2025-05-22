@@ -1,7 +1,7 @@
 import pandas as pd
 import random
 import math
-from typing import Set, Dict, List
+from typing import Set, Dict, List, Any
 from dataclasses import dataclass, field
 from src.data_reference import DataReference
 from src.generate_coord import generar_coordenada_en_localidad
@@ -9,33 +9,32 @@ from src.generate_coord import generar_coordenada_en_localidad
 
 @dataclass
 class DataConfig:
-    """Configuración de datos usando la referencia"""
+    """Contenedor de configuración y datos base para la generación de árboles"""
 
     localidades: Dict[int, str] = field(default_factory=lambda: DataReference.LOCALIDADES)
     especies: Dict[str, Dict[str, float]] = field(default_factory=lambda: DataReference.ESPECIES)
     tratamientos: Dict[str, Dict[str, float]] = field(default_factory=lambda: DataReference.TRATAMIENTOS)
     espacios: List[str] = field(default_factory=lambda: DataReference.ESPACIO)
     riesgos: List[str] = field(default_factory=lambda: DataReference.RIESGOS)
-    values_by_year: Dict[int, Dict[str, float]] = field(default_factory=lambda: DataReference.VALUES_BY_YEAR)
+    valores_anuales: Dict[int, Dict[str, float]] = field(default_factory=lambda: DataReference.VALUES_BY_YEAR)
     tipos_ct: List[str] = field(default_factory=lambda: DataReference.TIPOS_CT)
-    emplazamiento: List[str] = field(default_factory=lambda: DataReference.EMPLAZAMIENTO)
-    estado_general: List[str] = field(default_factory=lambda: DataReference.ESTADO_GENERAL)
-    autorizados: List[str] = field(default_factory=lambda: DataReference.AUTORIZADOS)
+    emplazamientos: List[str] = field(default_factory=lambda: DataReference.EMPLAZAMIENTO)
+    estados_generales: List[str] = field(default_factory=lambda: DataReference.ESTADO_GENERAL)
+    autorizados: Dict[str, float] = field(default_factory=lambda: DataReference.AUTORIZADOS)
 
 
 class SIGAUGenerator:
     def __init__(self):
         self.codigos_generados: Set[str] = set()
 
-    def generate_sigau(self, codigo_localidad: int) -> str:
-        """Genera código SIGAU único con prefijo de localidad"""
+    def generar(self, codigo_localidad: int) -> str:
+        """Genera un código SIGAU único basado en la localidad"""
 
         prefijo = f"{codigo_localidad:02d}"
 
         while True:
             digitos = "".join(random.choices("0123456789", k=12))
-            codigo = prefijo + "".join(digitos)
-
+            codigo = prefijo + digitos
             if codigo not in self.codigos_generados:
                 self.codigos_generados.add(codigo)
                 return codigo
@@ -46,150 +45,92 @@ class TreeDataGenerator:
         self.config = config
         self.sigau_gen = SIGAUGenerator()
 
-    def _generate_measurements(self) -> Dict[str, float]:
-        """Genera medidas del árbol con relaciones realistas"""
+    def _seleccionar_especie(self) -> Dict[str, Any]:
+        """Selecciona una especie y genera sus medidas"""
 
-        id_especie = random.randint(1, len(self.config.especies))
-        # Generación de medidas
-        pap = round(
-            random.uniform(self.config.especies[id_especie]["min_pap"], self.config.especies[id_especie]["max_pap"]), 2
-        )
-        altura_total = round(
-            random.uniform(
-                self.config.especies[id_especie]["min_alturatotal"], self.config.especies[id_especie]["max_alturatotal"]
-            ),
-            2,
-        )
+        especie_id = random.choice(list(self.config.especies.keys()))
+        especie = self.config.especies[especie_id]
+
+        pap = round(random.uniform(especie["min_pap"], especie["max_pap"]), 2)
+        altura_total = round(random.uniform(especie["min_alturatotal"], especie["max_alturatotal"]), 2)
 
         return {
-            "especie": self.config.especies[id_especie]["nombre_comun"],
+            "nombre": especie["nombre_comun"],
             "pap": pap,
-            "dap": round(pap * 3.1416, 2),
+            "dap": round(pap * math.pi, 2),
             "altura_total": altura_total,
             "altura_comercial": round(random.uniform(0, altura_total), 2),
-            "diam_copa_mayor": round(
-                random.uniform(
-                    self.config.especies[id_especie]["min_diamcopamayor"],
-                    self.config.especies[id_especie]["max_diamcopamayor"],
-                ),
-                2,
-            ),
-            "diam_copa_menor": round(
-                random.uniform(
-                    self.config.especies[id_especie]["min_diamcopamenor"],
-                    self.config.especies[id_especie]["max_diamcopamenor"],
-                ),
-                2,
-            ),
-            "perimetro_basal": round(pap * 3.1416 * 1.1, 2),
+            "diam_copa_mayor": round(random.uniform(especie["min_diamcopamayor"], especie["max_diamcopamayor"]), 2),
+            "diam_copa_menor": round(random.uniform(especie["min_diamcopamenor"], especie["max_diamcopamenor"]), 2),
+            "perimetro_basal": round(pap * math.pi * 1.1, 2),
         }
 
-    def _generate_status(self, tratamiento) -> Dict[str, float]:
-        """Genera datos de estado del árbol"""
+    def _generar_estado(self, tratamiento: str) -> Dict[str, Any]:
+        """Genera los estados del árbol a partir del tratamiento"""
 
-        # Generación de estado
-        est_fuste = self.config.tratamientos[tratamiento]["est_fuste"]
-        est_copa = self.config.tratamientos[tratamiento]["est_copa"]
-        est_raiz = self.config.tratamientos[tratamiento]["est_raiz"]
-        est_fito = self.config.tratamientos[tratamiento]["est_fito"]
-
-        est_gen = math.floor((est_fuste + est_copa + est_raiz + est_fito) / 4)
+        t = self.config.tratamientos[tratamiento]
+        promedio = math.floor((t["est_fuste"] + t["est_copa"] + t["est_raiz"] + t["est_fito"]) / 4)
 
         return {
-            "Estado_fuste": est_fuste,
-            "Estado_Copa": est_copa,
-            "Estado_Raiz": est_raiz,
-            "Estado_FitoSanitario": est_fito,
-            "Estado_General": self.config.estado_general[est_gen],
-            "riesgo": self.config.riesgos[est_gen],
+            "estado_fuste": t["est_fuste"],
+            "estado_copa": t["est_copa"],
+            "estado_raiz": t["est_raiz"],
+            "estado_fito": t["est_fito"],
+            "estado_general": self.config.estados_generales[promedio],
+            "riesgo": self.config.riesgos[promedio],
         }
 
-    def generate_tree(self, tree_id: int) -> Dict[str, any]:
-        """Genera datos de un árbol individual"""
-        anio = random.randint(2020, 2025)
-        medidas = self._generate_measurements()
-        tratamiento = random.choice(list(self.config.tratamientos.keys()))
-        estado = self._generate_status(tratamiento)
-        num_localidad = random.randint(1, len(self.config.localidades))
-        consec = f"{random.randint(0, 99999):05d}"
+    def generar_arbol(self, tree_id: int) -> Dict[str, Any]:
+        """Genera los datos simulados de un árbol individual"""
 
-        # Generar coordenadas
-        coordenadas = generar_coordenada_en_localidad(
-            "data/localidades_bogota.geojson", self.config.localidades[num_localidad].upper()
-        )
-        # print("coordenada ", coordenadas)
+        anio = random.randint(2020, 2025)
+        especie_data = self._seleccionar_especie()
+        tratamiento = random.choice(list(self.config.tratamientos.keys()))
+        estado = self._generar_estado(tratamiento)
+        num_localidad = random.randint(1, len(self.config.localidades))
+        localidad = self.config.localidades[num_localidad]
+        consecutivo = f"{random.randint(0, 99999):05d}"
+
+        lat, lon = generar_coordenada_en_localidad("data/localidades_bogota.geojson", localidad.upper())
 
         return {
             "ID": tree_id,
             "Anio": anio,
-            "IVP": self.config.values_by_year[anio]["ivp"],
-            "Salario Minimo": self.config.values_by_year[anio]["salario_minimo"],
-            "Concepto": f"{anio}EE{consec}",
+            "IVP": self.config.valores_anuales[anio]["ivp"],
+            "Salario Minimo": self.config.valores_anuales[anio]["salario_minimo"],
+            "Concepto": f"{anio}EE{consecutivo}",
             "TipoCT": random.choice(self.config.tipos_ct),
-            "Consecutivo": f"SSFFS-{consec}",
-            "SIGAU": self.sigau_gen.generate_sigau(num_localidad),
-            "Especie": medidas["especie"],
+            "Consecutivo": f"SSFFS-{consecutivo}",
+            "SIGAU": self.sigau_gen.generar(num_localidad),
+            "Especie": especie_data["nombre"],
             "Tratamiento": tratamiento,
             "Espacio": random.choice(self.config.espacios),
-            "Emplazamiento": random.choice(self.config.emplazamiento),
+            "Emplazamiento": random.choice(self.config.emplazamientos),
             "Estrato": random.randint(1, 6),
-            "Localidad": self.config.localidades[num_localidad],
-            "Latitud": coordenadas[0],
-            "Longitud": coordenadas[1],
-            "PAP": medidas["pap"],
-            "DAP": medidas["dap"],
-            "Altura Total": medidas["altura_total"],
-            "Altura Comercial": medidas["altura_comercial"],
-            "Diam. Copa Polar": medidas["diam_copa_mayor"],
-            "Diam. Copa Ecuatorial": medidas["diam_copa_menor"],
-            "Perimetro basal": medidas["perimetro_basal"],
-            "Estado fuste": estado["Estado_fuste"],
-            "Estado Copa": estado["Estado_Copa"],
-            "Estado Raiz": estado["Estado_Raiz"],
-            "Estado FitoSanitario": estado["Estado_FitoSanitario"],
-            "Estado General": estado["Estado_General"],
+            "Localidad": localidad,
+            "Latitud": lat,
+            "Longitud": lon,
+            "PAP": especie_data["pap"],
+            "DAP": especie_data["dap"],
+            "Altura Total": especie_data["altura_total"],
+            "Altura Comercial": especie_data["altura_comercial"],
+            "Diam. Copa Polar": especie_data["diam_copa_mayor"],
+            "Diam. Copa Ecuatorial": especie_data["diam_copa_menor"],
+            "Perimetro basal": especie_data["perimetro_basal"],
+            "Estado fuste": estado["estado_fuste"],
+            "Estado Copa": estado["estado_copa"],
+            "Estado Raiz": estado["estado_raiz"],
+            "Estado FitoSanitario": estado["estado_fito"],
+            "Estado General": estado["estado_general"],
             "Riesgo": estado["riesgo"],
-            "Interes patrimonial": random.choices(["Si", "No"], weights=[0.05, 0.95], k=1)[0],
+            "Interes patrimonial": random.choices(["Si", "No"], weights=[0.05, 0.95])[0],
             "Autorizado": random.choices(
-                list(self.config.autorizados.keys()), weights=list(self.config.autorizados.values()), k=1
+                list(self.config.autorizados.keys()), weights=list(self.config.autorizados.values())
             )[0],
         }
 
-    def generate_data(self, n: int = 100) -> pd.DataFrame:
-        """Genera DataFrame con datos de árboles"""
-        data = [self.generate_tree(i + 1) for i in range(n)]
+    def generar_dataset(self, cantidad: int = 100) -> pd.DataFrame:
+        """Genera un DataFrame con múltiples árboles simulados"""
 
-        columns = [
-            "ID",
-            "Anio",
-            "IVP",
-            "Salario Minimo",
-            "Concepto",
-            "TipoCT",
-            "Consecutivo",
-            "SIGAU",
-            "Especie",
-            "Tratamiento",
-            "Espacio",
-            "Estrato",
-            "Localidad",
-            "Latitud",
-            "Longitud",
-            "PAP",
-            "DAP",
-            "Altura Total",
-            "Altura Comercial",
-            "Diam. Copa Polar",
-            "Diam. Copa Ecuatorial",
-            "Perimetro basal",
-            "Estado fuste",
-            "Estado Copa",
-            "Estado Raiz",
-            "Estado FitoSanitario",
-            "Estado General",
-            "Riesgo",
-            "Interes patrimonial",
-            "Autorizado",
-        ]
-
-        return pd.DataFrame(data, columns=columns)
+        registros = [self.generar_arbol(i + 1) for i in range(cantidad)]
+        return pd.DataFrame(registros)

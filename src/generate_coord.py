@@ -1,11 +1,19 @@
 import geopandas as gpd
 from shapely.geometry import Polygon, Point
 import random
+import os
 
 
 def generar_coordenada_en_localidad(ruta_geojson, nombre_localidad):
+
+    if not os.path.exists(ruta_geojson):
+        raise FileNotFoundError(f"El archivo '{ruta_geojson}' no existe.")
+    
     # Cargar el GeoJSON
-    localidades = gpd.read_file(ruta_geojson)
+    try:
+        localidades = gpd.read_file(ruta_geojson)
+    except Exception as e:
+        raise RuntimeError(f"No se pudo leer el archivo GeoJSON: {e}")
 
     # Filtrar la localidad deseada
     localidad = localidades[localidades["LocNombre"] == nombre_localidad]

@@ -12,7 +12,7 @@ if __name__ == "__main__":
     # Generar datos
     print("Generando datos...")
     generator = data_generator.TreeDataGenerator()
-    df = generator.generate_data(NUM_REGISTROS)
+    df = generator.generar_dataset(NUM_REGISTROS)
     print(df.head())
 
     # Save to CSV
