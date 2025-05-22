@@ -5,10 +5,9 @@ import os
 
 
 def generar_coordenada_en_localidad(ruta_geojson, nombre_localidad):
-
     if not os.path.exists(ruta_geojson):
         raise FileNotFoundError(f"El archivo '{ruta_geojson}' no existe.")
-    
+
     # Cargar el GeoJSON
     try:
         localidades = gpd.read_file(ruta_geojson)

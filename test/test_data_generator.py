@@ -4,7 +4,6 @@ import pandas as pd
 
 
 class TestTreeDataGenerator(unittest.TestCase):
-
     def setUp(self):
         self.generator = TreeDataGenerator()
 
@@ -12,11 +11,37 @@ class TestTreeDataGenerator(unittest.TestCase):
         tree = self.generator.generar_arbol(1)
         self.assertIsInstance(tree, dict)
         expected_keys = {
-            "ID", "Anio", "IVP", "Salario Minimo", "Concepto", "TipoCT", "Consecutivo", "SIGAU",
-            "Especie", "Tratamiento", "Espacio", "Emplazamiento", "Estrato", "Localidad", "Latitud", "Longitud",
-            "PAP", "DAP", "Altura Total", "Altura Comercial", "Diam. Copa Polar", "Diam. Copa Ecuatorial",
-            "Perimetro basal", "Estado fuste", "Estado Copa", "Estado Raiz", "Estado FitoSanitario",
-            "Estado General", "Riesgo", "Interes patrimonial", "Autorizado"
+            "ID",
+            "Anio",
+            "IVP",
+            "Salario Minimo",
+            "Concepto",
+            "TipoCT",
+            "Consecutivo",
+            "SIGAU",
+            "Especie",
+            "Tratamiento",
+            "Espacio",
+            "Emplazamiento",
+            "Estrato",
+            "Localidad",
+            "Latitud",
+            "Longitud",
+            "PAP",
+            "DAP",
+            "Altura Total",
+            "Altura Comercial",
+            "Diam. Copa Polar",
+            "Diam. Copa Ecuatorial",
+            "Perimetro basal",
+            "Estado fuste",
+            "Estado Copa",
+            "Estado Raiz",
+            "Estado FitoSanitario",
+            "Estado General",
+            "Riesgo",
+            "Interes patrimonial",
+            "Autorizado",
         }
         self.assertEqual(set(tree.keys()), expected_keys)
 
