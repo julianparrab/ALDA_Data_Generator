@@ -1,8 +1,22 @@
 from src import data_generator
+import os
 
-if __name__ == '__main__':
-    number_rows = 10  # Cambia este número para generar más o menos filas
-    df = data_generator.generate_data(number_rows)  
-    print(df.head())  # Muestra las primeras filas del DataFrame generado
-    #df.to_csv("datos_arboles.csv", index=False)
-    print("Archivo 'datos_arboles.csv' generado con éxito.")
+if __name__ == "__main__":
+    # Configuración
+    NUM_REGISTROS = 2000
+    OUTPUT_FILE = "data/arboles_bogota.csv"
+
+    # Crear directorio si no existe
+    os.makedirs(os.path.dirname(OUTPUT_FILE), exist_ok=True)
+
+    # Generar datos
+    print("Generando datos...")
+    generator = data_generator.TreeDataGenerator()
+    df = generator.generate_data(NUM_REGISTROS)
+    print(df.head())
+
+    # Save to CSV
+    df.to_csv(OUTPUT_FILE, index=False, encoding="utf-8")
+    print("Datos generados exitosamente!")
+    print(f"Archivo generado: {OUTPUT_FILE}")
+    print(f"Registros creados: {len(df):,}")
